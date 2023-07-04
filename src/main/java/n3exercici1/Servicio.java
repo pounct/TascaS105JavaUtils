@@ -1,69 +1,82 @@
 package n3exercici1;
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 public class Servicio {
-	
-	public void encriptiFitxer(String filename, SecretKey secretKey) {
-		try {
-			
-			//SecretKey secretKey= KeyGenerator.getInstance("AES").generateKey();
-			
-			Cipher aes = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            aes.init(Cipher.ENCRYPT_MODE, secretKey);
-            
-            //String fileName = "Encrypted.txt"; // result
-            
-            FileOutputStream fs = new FileOutputStream(filename);
-            CipherOutputStream out = new CipherOutputStream(fs, aes);
-            out.write("[Hello:Okay]\nOkay".getBytes());
-            out.flush();
-            out.close();
-			
-		} catch (Exception e) {
-			// TODO: handle exception
+
+	public SecretKey generateKey(int n) throws NoSuchAlgorithmException {
+		KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+		keyGenerator.init(n);
+		SecretKey key = keyGenerator.generateKey();
+		return key;
+	}
+
+	public IvParameterSpec generateIv() {
+		byte[] iv = new byte[16];
+		new SecureRandom().nextBytes(iv);
+		return new IvParameterSpec(iv);
+	}
+
+	public void encryptFile(String algorithm, SecretKey key, IvParameterSpec iv, File inputFile, File outputFile)
+			throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+			InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+
+		Cipher cipher = Cipher.getInstance(algorithm);
+		cipher.init(Cipher.ENCRYPT_MODE, key, iv);
+		FileInputStream inputStream = new FileInputStream(inputFile);
+		FileOutputStream outputStream = new FileOutputStream(outputFile);
+		byte[] buffer = new byte[64];
+		int bytesRead;
+		while ((bytesRead = inputStream.read(buffer)) != -1) {
+			byte[] output = cipher.update(buffer, 0, bytesRead);
+			if (output != null) {
+				outputStream.write(output);
+			}
 		}
-	}
-	
-	public void desencriptiFitxer(String filename, SecretKey secretKey) {
-		try {
-			
-			//SecretKey secretKey= KeyGenerator.getInstance("AES").generateKey();
-			
-			Cipher aes = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            aes.init(Cipher.DECRYPT_MODE, secretKey);
-            
-            FileInputStream fis = new FileInputStream(filename);
-            CipherInputStream in = new CipherInputStream(fis, aes);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			
-		} catch (Exception  e) {
-			
+		byte[] outputBytes = cipher.doFinal();
+		if (outputBytes != null) {
+			outputStream.write(outputBytes);
 		}
-	}
-/*
-	public byte[] encryptMessage(byte[] message, byte[] keyBytes) throws InvalidKeyException, NoSuchPaddingException,
-			NoSuchAlgorithmException, BadPaddingException, IllegalBlockSizeException {
-
-		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-		SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
-		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-		return cipher.doFinal(message);
+		inputStream.close();
+		outputStream.close();
 	}
 
-	public byte[] decryptMessage(byte[] encryptedMessage, byte[] keyBytes) throws NoSuchPaddingException,
-			NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+	public void decryptFile(String algorithm, SecretKey key, IvParameterSpec iv, File inputFile, File outputFile)
+			throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+			InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
 
-		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-		SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
-		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-		return cipher.doFinal(encryptedMessage);
+		Cipher cipher = Cipher.getInstance(algorithm);
+		cipher.init(Cipher.DECRYPT_MODE, key, iv);
+		FileInputStream inputStream = new FileInputStream(inputFile);
+		FileOutputStream outputStream = new FileOutputStream(outputFile);
+		byte[] buffer = new byte[64];
+		int bytesRead;
+		while ((bytesRead = inputStream.read(buffer)) != -1) {
+			byte[] output = cipher.update(buffer, 0, bytesRead);
+			if (output != null) {
+				outputStream.write(output);
+			}
+		}
+		byte[] outputBytes = cipher.doFinal();
+		if (outputBytes != null) {
+			outputStream.write(outputBytes);
+		}
+		inputStream.close();
+		outputStream.close();
 	}
-*/
+
 }
